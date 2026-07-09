@@ -13,10 +13,10 @@ def main() -> None:
     try:
         while True:
             timestamp = format_timestamp(datetime.now(timezone.utc))
-            print(f"{timestamp}: {random_value}")
+            print(f"{timestamp}: {random_value}", flush=True)
             time.sleep(5)
     except KeyboardInterrupt:
-        print("Stopping logger.")
+        print("Stopping logger.", flush=True)
 
 
 if __name__ == "__main__":
