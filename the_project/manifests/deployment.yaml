@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-port
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server-port
+  template:
+    metadata:
+      labels:
+        app: server-port
+    spec:
+      containers:
+        - name: server-port
+          image: server-port:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: PORT
+              value: "8000"
