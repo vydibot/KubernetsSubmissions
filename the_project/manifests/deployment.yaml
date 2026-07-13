@@ -15,7 +15,7 @@ spec:
       containers:
         - name: server-port
           image: server-port:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           ports:
             - containerPort: 8000
           env:
