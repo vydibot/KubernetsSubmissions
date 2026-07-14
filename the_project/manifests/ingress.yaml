@@ -1,16 +1,16 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: log-output-ingress
+  name: server-port-ingress
 spec:
   rules:
-    - host: log-output.local
+    - host: server-port.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: log-output-svc
+                name: server-port-svc
                 port:
-                  number: 2345
+                  number: 80
