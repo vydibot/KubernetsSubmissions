@@ -7,6 +7,5 @@ spec:
   selector:
     app: pong-app
   ports:
-    - name: http
-      port: 80
+    - port: 2346
       targetPort: 5001

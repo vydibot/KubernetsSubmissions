@@ -7,10 +7,17 @@ spec:
     - host: log-output.local
       http:
         paths:
-          - path: /
+          - path: /status
             pathType: Prefix
             backend:
               service:
                 name: log-output-svc
                 port:
                   number: 2345
+          - path: /ping
+            pathType: Prefix
+            backend:
+              service:
+                name: pong-app-svc
+                port:
+                  number: 2346

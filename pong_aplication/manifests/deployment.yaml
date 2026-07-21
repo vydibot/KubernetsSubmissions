@@ -12,6 +12,10 @@ spec:
       labels:
         app: pong-app
     spec:
+      volumes:
+        - name: shared-logs
+          persistentVolumeClaim:
+            claimName: shared-pvc
       containers:
         - name: pong-app
           image: pong-app:latest
@@ -19,3 +23,6 @@ spec:
           ports:
             - containerPort: 5001
               name: http
+          volumeMounts: 
+            - name: shared-logs
+              mountPath: /usr/src/app/shared
