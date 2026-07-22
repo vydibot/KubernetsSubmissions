@@ -12,6 +12,10 @@ spec:
       labels:
         app: server-port
     spec:
+      volumes:
+        - name: imagesave
+          persistentVolumeClaim:
+            claimName: image-pvc
       containers:
         - name: server-port
           image: server-port:latest
@@ -21,3 +25,6 @@ spec:
           env:
             - name: PORT
               value: "8000"
+          volumeMounts:
+            - name: imagesave
+              mountPath: /usr/src/app/images
