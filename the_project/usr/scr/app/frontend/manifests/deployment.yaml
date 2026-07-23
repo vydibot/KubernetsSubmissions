@@ -25,6 +25,8 @@ spec:
           env:
             - name: PORT
               value: "8000"
+            - name: BACKEND_URL
+              value: "http://todo-backend-svc:8000"
           volumeMounts:
             - name: imagesave
-              mountPath: /usr/src/app/images
+              mountPath: /app/images

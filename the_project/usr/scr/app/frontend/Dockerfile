@@ -10,4 +10,4 @@ COPY . .
 EXPOSE 8000
 ENV PORT=8000
 
-CMD ["python", "app.py"]
+CMD ["python", "todo_app.py"]

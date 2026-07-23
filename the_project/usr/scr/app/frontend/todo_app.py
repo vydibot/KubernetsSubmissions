@@ -3,17 +3,18 @@ import time
 import httpx
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, responses
 from fastapi.responses import HTMLResponse, FileResponse
 
-# Directory where the persistent volume will store the image
-IMAGE_DIR = os.getenv("IMAGE_DIR", "usr/src/app/images")
+IMAGE_DIR = os.getenv("IMAGE_DIR", "/usr/src/app/images")
 IMAGE_PATH = os.path.join(IMAGE_DIR, "cached_image.jpg")
-CACHE_DURATION = 600  # 10 minutes in seconds
+CACHE_DURATION = 600  # 10 minutes
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://todo-backend-svc:8000")
 
 
 async def fetch_and_cache_image():
-    """Fetches a new image from Lorem Picsum and saves it to the persistent volume."""
+    """Fetches a new image from Lorem Picsum and saves it to local disk."""
     os.makedirs(IMAGE_DIR, exist_ok=True)
     url = "https://picsum.photos/1200"
     
@@ -44,6 +45,7 @@ app = FastAPI(title="Todo App", lifespan=lifespan)
 
 @app.get("/image")
 async def get_image():
+    """Serves the cached image, updating if older than 10 minutes."""
     if os.path.exists(IMAGE_PATH):
         file_age = time.time() - os.path.getmtime(IMAGE_PATH)
         if file_age > CACHE_DURATION:
@@ -65,14 +67,19 @@ async def get_image():
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    # Hardcoded todos list matching the exercise instructions
-    todos = [
-        "Learn Kubernetes basics",
-        "Deploy application to cluster",
-        "Configure persistent volumes"
-    ]
-    
-    todos_html = "".join([f'<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid #2ecc71; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left; font-size: 16px;">{todo}</div>' for todo in todos])
+    todos = []
+    async with httpx.AsyncClient() as client:
+        try:
+            res = await client.get(f"{BACKEND_URL}/todos")
+            if res.status_code == 200:
+                todos = res.json()
+        except Exception as e:
+            print(f"Failed to fetch todos from backend: {e}")
+
+    todos_html = "".join([
+        f'<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid #2ecc71; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left;">{t["text"]}</div>'
+        for t in todos
+    ])
 
     return f"""
     <!DOCTYPE html>
@@ -89,10 +96,10 @@ async def root():
           <img src="/image" alt="Random Hourly Image" style="width: 300px; height: 300px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
         </div>
 
-        <div style="margin: 30px 0;">
-          <input type="text" maxlength="140" placeholder="Enter a new todo (max 140 characters)" style="width: 450px; padding: 12px; font-size: 14px; border: 1px solid #2ecc71; border-radius: 4px; outline: none;" />
-          <button style="padding: 12px 24px; font-size: 14px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: bold;">Send</button>
-        </div>
+        <form action="/create" method="post" style="margin: 30px 0;">
+          <input type="text" name="text" maxlength="140" placeholder="Enter a new todo (max 140 characters)" style="width: 450px; padding: 12px; font-size: 14px; border: 1px solid #2ecc71; border-radius: 4px; outline: none;" required />
+          <button type="submit" style="padding: 12px 24px; font-size: 14px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: bold;">Send</button>
+        </form>
 
         <h2 style="color: #333; margin-top: 40px;">Todos</h2>
         <div style="display: flex; flex-direction: column; align-items: center;">
@@ -101,6 +108,18 @@ async def root():
       </body>
     </html>
     """
+
+
+@app.post("/create")
+async def create_todo(text: str = Form(...)):
+    if len(text) <= 140:
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.post(f"{BACKEND_URL}/todos", json={"text": text})
+            except Exception as e:
+                print(f"Failed to submit todo: {e}")
+    
+    return responses.RedirectResponse(url="/", status_code=303)
 
 
 if __name__ == "__main__":
