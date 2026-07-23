@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 WORKDIR /usr/src/app
 
-RUN pip install --no-cache-dir fastapi uvicorn pydantic
+RUN pip install --no-cache-dir fastapi uvicorn pydantic httpx
 
 COPY reader.py .
 

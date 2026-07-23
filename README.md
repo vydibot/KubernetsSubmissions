@@ -2,7 +2,7 @@
 
 ## Exercises
 
-### Chapter 1
+### Chapter 2
 
 - [1.1.](https://github.com/vydibot/KubernetsSubmissions/tree/1.1/log_output)
 - [1.2.](https://github.com/vydibot/KubernetsSubmissions/tree/1.2/the_project)
@@ -17,3 +17,7 @@
 - [1.11.](https://github.com/vydibot/KubernetsSubmissions/tree/1.11)
 - [1.12.](https://github.com/vydibot/KubernetsSubmissions/tree/1.12/the_project)
 - [1.13.](https://github.com/vydibot/KubernetsSubmissions/tree/1.13/the_project)
+
+### Chater 3
+
+- [2.1.](https://github.com/vydibot/KubernetsSubmissions/tree/2.1)

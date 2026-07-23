@@ -14,8 +14,7 @@ spec:
     spec:
       volumes:
         - name: shared-logs
-          persistentVolumeClaim:
-            claimName: shared-pvc
+          emptyDir: {}
       containers:
         - name: log-writer
           image: log-writer:latest

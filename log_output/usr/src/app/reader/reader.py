@@ -1,21 +1,23 @@
 import os
+import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
 SHARED_DIR = "/usr/src/app/shared"
 LOG_FILE_PATH = os.path.join(SHARED_DIR, "log.txt")
-PING_FILE_PATH = os.path.join(SHARED_DIR, "pingpong.txt")
+
+# Kubernetes DNS service URL (Fallback to Cluster IP or Env Var if needed)
+PONG_SERVICE_URL = os.getenv("PONG_SERVICE_URL", "http://pong-app-svc:2346/pongs")
 
 class StatusResponse(BaseModel):
     timestamp: str
     random_string: str
     pingpong_count: int
 
-@app.get('/status', response_model=StatusResponse)
-def get_status():
-    # 1. Read timestamp and random string from log.txt
+def fetch_latest_log():
     if not os.path.exists(LOG_FILE_PATH):
         raise HTTPException(status_code=404, detail="Log file not found yet.")
         
@@ -25,16 +27,29 @@ def get_status():
             raise HTTPException(status_code=503, detail="Log file is empty.")
         last_line = lines[-1].strip()
         timestamp, random_string = last_line.split(": ", 1)
+        return timestamp, random_string
 
-    # 2. Read ping-pong count from pingpong.txt
-    pingpong_count = 0
-    if os.path.exists(PING_FILE_PATH):
-        try:
-            with open(PING_FILE_PATH, "r") as f:
-                content = f.read().strip()
-                pingpong_count = int(content) if content else 0
-        except Exception:
-            pingpong_count = 0
+async def fetch_ping_count() -> int:
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(PONG_SERVICE_URL, timeout=3.0)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("pongs", 0)
+    except Exception as e:
+        print(f"Error fetching pongs from {PONG_SERVICE_URL}: {e}")
+    return 0
+
+@app.get('/', response_class=PlainTextResponse)
+async def get_root():
+    timestamp, random_string = fetch_latest_log()
+    pingpong_count = await fetch_ping_count()
+    return f"{timestamp}: {random_string}.\nPing / Pongs: {pingpong_count}"
+
+@app.get('/status', response_model=StatusResponse)
+async def get_status():
+    timestamp, random_string = fetch_latest_log()
+    pingpong_count = await fetch_ping_count()
 
     return StatusResponse(
         timestamp=timestamp,
