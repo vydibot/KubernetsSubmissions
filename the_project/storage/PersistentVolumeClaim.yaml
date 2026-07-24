@@ -4,9 +4,9 @@ metadata:
   name: image-pvc
   namespace: project
 spec:
-  storageClassName: "imagesaving"
+  storageClassName: ""
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi

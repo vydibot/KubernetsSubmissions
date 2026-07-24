@@ -3,10 +3,10 @@ kind: PersistentVolume
 metadata:
   name: image-pv
 spec:
-  storageClassName: "imagesaving"
+  storageClassName: ""
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   hostPath:
     path: /tmp/kube
