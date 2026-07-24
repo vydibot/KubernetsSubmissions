@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: server-port-ingress
+  namespace: project
 spec:
   rules:
     - host: server-port.local
