@@ -8,6 +8,7 @@ app = FastAPI()
 
 SHARED_DIR = "/usr/src/app/shared"
 LOG_FILE_PATH = os.path.join(SHARED_DIR, "log.txt")
+CONFIG_FILE_PATH = "/usr/src/app/config/information.txt"
 
 # Kubernetes DNS service URL (Fallback to Cluster IP or Env Var if needed)
 PONG_SERVICE_URL = os.getenv("PONG_SERVICE_URL", "http://pong-app-svc:2346/pongs")
@@ -16,6 +17,8 @@ class StatusResponse(BaseModel):
     timestamp: str
     random_string: str
     pingpong_count: int
+    message: str
+    file_content: str
 
 def fetch_latest_log():
     if not os.path.exists(LOG_FILE_PATH):
@@ -28,6 +31,12 @@ def fetch_latest_log():
         last_line = lines[-1].strip()
         timestamp, random_string = last_line.split(": ", 1)
         return timestamp, random_string
+
+def fetch_config_file() -> str:
+    if os.path.exists(CONFIG_FILE_PATH):
+        with open(CONFIG_FILE_PATH, "r") as f:
+            return f.read().strip()
+    return "file not found"
 
 async def fetch_ping_count() -> int:
     try:
@@ -44,17 +53,23 @@ async def fetch_ping_count() -> int:
 async def get_root():
     timestamp, random_string = fetch_latest_log()
     pingpong_count = await fetch_ping_count()
-    return f"{timestamp}: {random_string}.\nPing / Pongs: {pingpong_count}"
+    message = os.getenv("MESSAGE", "")
+    file_content = fetch_config_file()
+    return f"file content: {file_content}\nenv variable: MESSAGE={message}\n{timestamp}: {random_string}.\nPing / Pongs: {pingpong_count}"
 
 @app.get('/status', response_model=StatusResponse)
 async def get_status():
     timestamp, random_string = fetch_latest_log()
     pingpong_count = await fetch_ping_count()
+    message = os.getenv("MESSAGE", "")
+    file_content = fetch_config_file()
 
     return StatusResponse(
         timestamp=timestamp,
         random_string=random_string,
-        pingpong_count=pingpong_count
+        pingpong_count=pingpong_count,
+        message=message,
+        file_content=file_content
     )
 
 if __name__ == "__main__":

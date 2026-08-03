@@ -16,6 +16,14 @@ spec:
       volumes:
         - name: shared-logs
           emptyDir: {}
+          
+        - name: file-volume
+          configMap:
+            name: file-config
+            items:
+              - key: information.txt
+                path: information.txt
+
       containers:
         - name: log-writer
           image: log-writer:latest
@@ -23,11 +31,23 @@ spec:
           volumeMounts:
             - name: shared-logs
               mountPath: /usr/src/app/shared
+
         - name: log-reader
           image: log-reader:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
+
+          env:
+            - name: MESSAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: env-config
+                  key: MESSAGE
+
           volumeMounts:
             - name: shared-logs
               mountPath: /usr/src/app/shared
+
+            - name: file-volume
+              mountPath: /usr/src/app/config
