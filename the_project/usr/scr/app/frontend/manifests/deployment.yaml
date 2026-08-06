@@ -31,3 +31,6 @@ spec:
           volumeMounts:
             - name: imagesave
               mountPath: /app/images
+          envFrom:
+            - configMapRef:
+                name: todo-app-config

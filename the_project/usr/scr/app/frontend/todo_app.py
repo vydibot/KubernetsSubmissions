@@ -8,18 +8,18 @@ from fastapi.responses import HTMLResponse, FileResponse
 
 IMAGE_DIR = os.getenv("IMAGE_DIR", "/usr/src/app/images")
 IMAGE_PATH = os.path.join(IMAGE_DIR, "cached_image.jpg")
-CACHE_DURATION = 600  # 10 minutes
+CACHE_DURATION = int(os.getenv("CACHE_DURATION", "600"))  # Default: 10 minutes
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://todo-backend-svc:8000")
+IMAGE_SOURCE_URL = os.getenv("IMAGE_SOURCE_URL", "https://picsum.photos/1200")
 
 
 async def fetch_and_cache_image():
-    """Fetches a new image from Lorem Picsum and saves it to local disk."""
+    """Fetches a new image from the source URL and saves it to local disk."""
     os.makedirs(IMAGE_DIR, exist_ok=True)
-    url = "https://picsum.photos/1200"
     
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, follow_redirects=True)
+        response = await client.get(IMAGE_SOURCE_URL, follow_redirects=True)
         if response.status_code == 200:
             with open(IMAGE_PATH, "wb") as f:
                 f.write(response.content)
@@ -28,7 +28,7 @@ async def fetch_and_cache_image():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     port = os.getenv("PORT", "8000")
-    print(f"Server started in port {port}")
+    print(f"Server started on port {port}")
     
     os.makedirs(IMAGE_DIR, exist_ok=True)
     if not os.path.exists(IMAGE_PATH):
@@ -45,7 +45,7 @@ app = FastAPI(title="Todo App", lifespan=lifespan)
 
 @app.get("/image")
 async def get_image():
-    """Serves the cached image, updating if older than 10 minutes."""
+    """Serves the cached image, updating if older than CACHE_DURATION."""
     if os.path.exists(IMAGE_PATH):
         file_age = time.time() - os.path.getmtime(IMAGE_PATH)
         if file_age > CACHE_DURATION:

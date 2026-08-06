@@ -25,3 +25,4 @@
 - [2.3.](https://github.com/vydibot/KubernetsSubmissions/tree/2.3)
 - [2.4.](https://github.com/vydibot/KubernetsSubmissions/tree/2.4/the_project)
 - [2.5.](https://github.com/vydibot/KubernetsSubmissions/tree/2.5)
+- [2.6.](https://github.com/vydibot/KubernetsSubmissions/tree/2.6/the_project)
