@@ -22,6 +22,20 @@ spec:
           env:
             - name: PORT
               value: "8000"
+            - name: POSTGRES_HOST
+              value: "todo-postgres-svc.project.svc.cluster.local"
+            - name: POSTGRES_DB
+              value: "todos_db"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
               
           envFrom:
             - configMapRef:

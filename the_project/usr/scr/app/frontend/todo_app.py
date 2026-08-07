@@ -68,18 +68,24 @@ async def get_image():
 @app.get("/", response_class=HTMLResponse)
 async def root():
     todos = []
+    error_msg = ""
     async with httpx.AsyncClient() as client:
         try:
-            res = await client.get(f"{BACKEND_URL}/todos")
+            res = await client.get(f"{BACKEND_URL}/todos", timeout=5.0)
             if res.status_code == 200:
                 todos = res.json()
+            else:
+                error_msg = f"Backend returned status code {res.status_code}"
         except Exception as e:
-            print(f"Failed to fetch todos from backend: {e}")
+            error_msg = f"Could not connect to backend at {BACKEND_URL}: {e}"
 
-    todos_html = "".join([
-        f'<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid #2ecc71; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left;">{t["text"]}</div>'
-        for t in todos
-    ])
+    if error_msg:
+        todos_html = f'<div style="color: red; background: #ffe6e6; padding: 15px; margin: 10px auto; width: 600px; border-radius: 4px;">{error_msg}</div>'
+    else:
+        todos_html = "".join([
+            f'<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid #2ecc71; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left;">{t["text"]}</div>'
+            for t in todos
+        ])
 
     return f"""
     <!DOCTYPE html>
