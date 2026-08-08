@@ -1,9 +1,16 @@
 import os
+import logging
 from typing import List
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 import psycopg2
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("todo-backend")
 
 DB_HOST = os.getenv("POSTGRES_HOST", "todo-postgres-svc.project.svc.cluster.local")
 DB_NAME = os.getenv("POSTGRES_DB", "todos_db")
@@ -13,10 +20,10 @@ DB_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 class Todo(BaseModel):
     id: int
-    text: str = Field(..., max_length=140)
+    text: str
 
 class TodoCreate(BaseModel):
-    text: str = Field(..., max_length=140)
+    text: str
 
 def get_db_connection():
     return psycopg2.connect(
@@ -40,8 +47,9 @@ def init_db():
         conn.commit()
         cur.close()
         conn.close()
+        logger.info("Database initialized successfully.")
     except Exception as e:
-        print(f"Database initialization error: {e}")
+        logger.error(f"Database initialization error: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -62,10 +70,22 @@ async def get_todos():
         conn.close()
         return todos
     except Exception as e:
+        logger.error(f"Failed to fetch todos: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 @app.post("/todos", response_model=Todo, status_code=201)
 async def create_todo(payload: TodoCreate):
+    logger.info(f"Received todo request with text: '{payload.text}'")
+
+    if len(payload.text) > 140:
+        logger.warning(
+            f"REJECTED: Todo text exceeds 140 characters (Length: {len(payload.text)}). Payload: '{payload.text}'"
+        )
+        raise HTTPException(
+            status_code=400, 
+            detail="Todo text must not exceed 140 characters."
+        )
+
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -77,8 +97,10 @@ async def create_todo(payload: TodoCreate):
         conn.commit()
         cur.close()
         conn.close()
+        logger.info(f"Successfully created todo ID {row[0]}")
         return Todo(id=row[0], text=row[1])
     except Exception as e:
+        logger.error(f"Database insertion error: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 if __name__ == "__main__":

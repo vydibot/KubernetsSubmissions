@@ -1,23 +1,29 @@
 import os
 import time
+import logging
 import httpx
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Form, responses
 from fastapi.responses import HTMLResponse, FileResponse
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("todo-frontend")
+
 IMAGE_DIR = os.getenv("IMAGE_DIR", "/usr/src/app/images")
 IMAGE_PATH = os.path.join(IMAGE_DIR, "cached_image.jpg")
-CACHE_DURATION = int(os.getenv("CACHE_DURATION", "600"))  # Default: 10 minutes
+CACHE_DURATION = int(os.getenv("CACHE_DURATION", "600"))
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://todo-backend-svc:8000")
 IMAGE_SOURCE_URL = os.getenv("IMAGE_SOURCE_URL", "https://picsum.photos/1200")
 
 
 async def fetch_and_cache_image():
-    """Fetches a new image from the source URL and saves it to local disk."""
     os.makedirs(IMAGE_DIR, exist_ok=True)
-    
     async with httpx.AsyncClient() as client:
         response = await client.get(IMAGE_SOURCE_URL, follow_redirects=True)
         if response.status_code == 200:
@@ -28,14 +34,14 @@ async def fetch_and_cache_image():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     port = os.getenv("PORT", "8000")
-    print(f"Server started on port {port}")
+    logger.info(f"Server started on port {port}")
     
     os.makedirs(IMAGE_DIR, exist_ok=True)
     if not os.path.exists(IMAGE_PATH):
         try:
             await fetch_and_cache_image()
         except Exception as e:
-            print(f"Failed to fetch initial image: {e}")
+            logger.error(f"Failed to fetch initial image: {e}")
             
     yield
 
@@ -45,19 +51,18 @@ app = FastAPI(title="Todo App", lifespan=lifespan)
 
 @app.get("/image")
 async def get_image():
-    """Serves the cached image, updating if older than CACHE_DURATION."""
     if os.path.exists(IMAGE_PATH):
         file_age = time.time() - os.path.getmtime(IMAGE_PATH)
         if file_age > CACHE_DURATION:
             try:
                 await fetch_and_cache_image()
             except Exception as e:
-                print(f"Failed to update cached image: {e}")
+                logger.error(f"Failed to update cached image: {e}")
     else:
         try:
             await fetch_and_cache_image()
         except Exception as e:
-            print(f"Failed to fetch image: {e}")
+            logger.error(f"Failed to fetch image: {e}")
 
     if os.path.exists(IMAGE_PATH):
         return FileResponse(IMAGE_PATH, media_type="image/jpeg")
@@ -103,7 +108,7 @@ async def root():
         </div>
 
         <form action="/create" method="post" style="margin: 30px 0;">
-          <input type="text" name="text" maxlength="140" placeholder="Enter a new todo (max 140 characters)" style="width: 450px; padding: 12px; font-size: 14px; border: 1px solid #2ecc71; border-radius: 4px; outline: none;" required />
+          <input type="text" name="text" placeholder="Enter a new todo (max 140 characters)" style="width: 450px; padding: 12px; font-size: 14px; border: 1px solid #2ecc71; border-radius: 4px; outline: none;" required />
           <button type="submit" style="padding: 12px 24px; font-size: 14px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: bold;">Send</button>
         </form>
 
@@ -118,12 +123,15 @@ async def root():
 
 @app.post("/create")
 async def create_todo(text: str = Form(...)):
-    if len(text) <= 140:
-        async with httpx.AsyncClient() as client:
-            try:
-                await client.post(f"{BACKEND_URL}/todos", json={"text": text})
-            except Exception as e:
-                print(f"Failed to submit todo: {e}")
+    async with httpx.AsyncClient() as client:
+        try:
+            res = await client.post(f"{BACKEND_URL}/todos", json={"text": text})
+            if res.status_code != 201:
+                logger.warning(f"Backend rejected todo (Status {res.status_code}): {res.text}")
+            else:
+                logger.info("Successfully sent todo to backend")
+        except Exception as e:
+            logger.error(f"Failed to submit todo: {e}")
     
     return responses.RedirectResponse(url="/", status_code=303)
 
