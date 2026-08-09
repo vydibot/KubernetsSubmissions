@@ -3,10 +3,12 @@ kind: Ingress
 metadata:
   name: log-output-ingress
   namespace: exercises
+  annotations:
+    kubernetes.io/ingress.class: "gce"
 spec:
   rules:
-    - host: log-output.local
-      http:
+    # - host: log-output.local  <-- Commented out because it is not needed for GKE Ingress
+    - http:
         paths:
           - path: /status
             pathType: Prefix
@@ -15,7 +17,7 @@ spec:
                 name: log-output-svc
                 port:
                   number: 2345
-          - path: /ping
+          - path: /pingpong
             pathType: Prefix
             backend:
               service:

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-config
+  namespace: exercises
+data:
+  MESSAGE: "Hello from GKE Log Reader!"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: file-config
+  namespace: exercises
+data:
+  information.txt: |
+    skibidi(this text is from file)

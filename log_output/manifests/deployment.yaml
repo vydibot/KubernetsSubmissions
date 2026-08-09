@@ -16,38 +16,32 @@ spec:
       volumes:
         - name: shared-logs
           emptyDir: {}
-          
         - name: file-volume
           configMap:
             name: file-config
             items:
               - key: information.txt
                 path: information.txt
-
       containers:
         - name: log-writer
-          image: log-writer:latest
-          imagePullPolicy: IfNotPresent
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/log-repo/log-writer:v1
+          imagePullPolicy: Always
           volumeMounts:
             - name: shared-logs
               mountPath: /usr/src/app/shared
-
         - name: log-reader
-          image: log-reader:latest
-          imagePullPolicy: IfNotPresent
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/log-repo/log-reader:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
-
           env:
             - name: MESSAGE
               valueFrom:
                 configMapKeyRef:
                   name: env-config
                   key: MESSAGE
-
           volumeMounts:
             - name: shared-logs
               mountPath: /usr/src/app/shared
-
             - name: file-volume
               mountPath: /usr/src/app/config
