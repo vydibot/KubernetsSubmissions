@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: pong-app
-          image: pong-app:latest
-          imagePullPolicy: IfNotPresent
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/pong-repo/pong-app:v1
+          imagePullPolicy: Always
           ports:
             - containerPort: 5000
           env:
