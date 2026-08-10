@@ -14,10 +14,29 @@ spec:
       backendRefs:
         - name: log-output-svc
           port: 2345
+
     - matches:
         - path:
             type: PathPrefix
             value: /pingpong
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
       backendRefs:
         - name: pong-app-svc
           port: 2346
+
+    - matches:
+        - path:
+            type: Exact
+            value: /ping
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /pingpong
+            statusCode: 302
