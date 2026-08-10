@@ -4,7 +4,6 @@ metadata:
   name: image-pvc
   namespace: project
 spec:
-  storageClassName: ""
   accessModes:
     - ReadWriteOnce
   resources:

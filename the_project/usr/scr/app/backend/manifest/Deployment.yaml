@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: todo-backend:latest
-          imagePullPolicy: Never
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend:v1.0.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
@@ -36,7 +36,6 @@ spec:
                 secretKeyRef:
                   name: postgres-secret
                   key: POSTGRES_PASSWORD
-              
           envFrom:
             - configMapRef:
                 name: todo-app-config

@@ -5,8 +5,7 @@ metadata:
   namespace: project
 spec:
   rules:
-    - host: server-port.local
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

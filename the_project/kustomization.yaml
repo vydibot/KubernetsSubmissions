@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: project
+
+resources:
+  - storage/PersistentVolumeClaim.yaml
+  - usr/scr/app/configmap/configmap.yaml
+  - usr/scr/app/database/secret.dec.yaml 
+  - usr/scr/app/database/postgres/service.yaml
+  - usr/scr/app/database/postgres/stafulset.yaml
+  - usr/scr/app/backend/manifest/Deployment.yaml
+  - usr/scr/app/backend/manifest/Service.yaml
+  - usr/scr/app/frontend/manifests/deployment.yaml
+  - usr/scr/app/frontend/manifests/service.yaml
+  - usr/scr/app/frontend/manifests/ingress.yaml
+  - usr/scr/app/jobs/wiki_cronjob.yaml
+
+images:
+  - name: server-port
+    newName: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend
+    newTag: v1.0.0
+  - name: todo-backend
+    newName: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend
+    newTag: v1.0.0

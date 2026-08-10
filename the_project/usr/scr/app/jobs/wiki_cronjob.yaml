@@ -21,7 +21,7 @@ spec:
                   TODO_TEXT="Read $WIKI_URL"
                   echo "Generated todo: $TODO_TEXT"
                   
-                  curl -s -X POST "http://todo-backend-svc.project.svc.cluster.local:8000/todos" \
+                  curl -s -f -X POST "http://todo-backend-svc.project.svc.cluster.local:8000/todos" \
                     -H "Content-Type: application/json" \
                     -d "{\"text\": \"$TODO_TEXT\"}"
           restartPolicy: OnFailure
