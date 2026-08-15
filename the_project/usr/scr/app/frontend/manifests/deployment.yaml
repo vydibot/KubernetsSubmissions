@@ -5,6 +5,8 @@ metadata:
   namespace: project
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: server-port
@@ -28,9 +30,9 @@ spec:
               value: "8000"
             - name: BACKEND_URL
               value: "http://todo-backend-svc.project.svc.cluster.local:8000"
-          volumeMounts:
-            - name: imagesave
-              mountPath: /app/images
           envFrom:
             - configMapRef:
                 name: todo-app-config
+          volumeMounts:
+            - name: imagesave
+              mountPath: /app/images
