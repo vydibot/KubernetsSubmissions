@@ -38,3 +38,4 @@
 - [3.3.](https://github.com/vydibot/KubernetsSubmissions/tree/3.3/log_output)
 - [3.4.](https://github.com/vydibot/KubernetsSubmissions/tree/3.4/log_output)
 - [3.5.](https://github.com/vydibot/KubernetsSubmissions/tree/3.5/the_project)
+- [3.6.](https://github.com/vydibot/KubernetsSubmissions/tree/3.6/the_project)
