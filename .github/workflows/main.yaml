@@ -17,7 +17,8 @@ jobs:
   build-publish-deploy:
     name: Build, Publish and Deploy
     runs-on: ubuntu-latest
-    
+    environment: GKE_PROJECT
+
     permissions:
       contents: 'read'
       id-token: 'write'
