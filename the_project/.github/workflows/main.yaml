@@ -1,0 +1,82 @@
+name: Release application
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: dwk-gke-505002
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: us-central1-a
+  REGISTRY: us-central1-docker.pkg.dev
+  REPOSITORY: todo-repo
+  NAMESPACE: project
+
+jobs:
+  build-publish-deploy:
+    name: Build, Publish and Deploy
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud via Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: '${{ env.GKE_CLUSTER }}'
+          location: '${{ env.GKE_ZONE }}'
+          project_id: '${{ env.PROJECT_ID }}'
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Form Image Tags
+        run: |
+          echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:${{ github.sha }}" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Build and Push Frontend
+        run: |
+          docker build --platform linux/amd64 -t $FRONTEND_IMAGE ./the_project/usr/scr/app/frontend
+          docker push $FRONTEND_IMAGE
+
+      - name: Build and Push Backend
+        run: |
+          docker build --platform linux/amd64 -t $BACKEND_IMAGE ./the_project/usr/scr/app/backend
+          docker push $BACKEND_IMAGE
+
+      - name: Install SOPS & Decrypt Secret
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          sudo curl -L https://github.com/getsops/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64 -o /usr/local/bin/sops
+          sudo chmod +x /usr/local/bin/sops
+          sops -d the_project/usr/scr/app/database/secret.yaml > the_project/usr/scr/app/database/secret.dec.yaml
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Deploy to GKE
+        working-directory: ./the_project
+        run: |
+          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend=$FRONTEND_IMAGE
+          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend=$BACKEND_IMAGE
+          kubectl apply -k .
+          kubectl rollout status deployment/server-port -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/todo-backend-dep -n ${{ env.NAMESPACE }}
+          kubectl get services -n ${{ env.NAMESPACE }} -o wide
