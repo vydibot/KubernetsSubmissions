@@ -1,0 +1,44 @@
+name: Delete Branch Environment
+
+on:
+  delete:
+
+env:
+  PROJECT_ID: dwk-gke-505002
+  GKE_CLUSTER: dwk-cluster
+  GKE_ZONE: us-central1-a
+
+jobs:
+  delete-environment:
+    name: Delete GKE Namespace
+    if: github.event.ref_type == 'branch' && github.event.ref != 'main' && github.event.ref != 'master'
+    runs-on: ubuntu-latest
+    environment: GKE_PROJECT
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Authenticate to Google Cloud via Workload Identity Federation
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ secrets.SERVICE_ACCOUNT }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: '${{ env.GKE_CLUSTER }}'
+          location: '${{ env.GKE_ZONE }}'
+          project_id: '${{ env.PROJECT_ID }}'
+
+      - name: Delete Namespace
+        run: |
+          DELETED_BRANCH="${{ github.event.ref }}"
+          echo "Deleting namespace for deleted branch: $DELETED_BRANCH"
+          
+          kubectl delete namespace "$DELETED_BRANCH" --ignore-not-found=true
