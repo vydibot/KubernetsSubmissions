@@ -3,7 +3,7 @@ name: Release application
 on:
   push:
     branches:
-      - main
+      - '*'  
 
 env:
   PROJECT_ID: dwk-gke-505002
@@ -11,13 +11,12 @@ env:
   GKE_ZONE: us-central1-a
   REGISTRY: us-central1-docker.pkg.dev
   REPOSITORY: todo-repo
-  NAMESPACE: project
 
 jobs:
   build-publish-deploy:
     name: Build, Publish and Deploy
     runs-on: ubuntu-latest
-    environment: GKE_PROJECT
+    environment: production
 
     permissions:
       contents: 'read'
@@ -75,9 +74,23 @@ jobs:
       - name: Deploy to GKE
         working-directory: ./the_project
         run: |
+          BRANCH=${GITHUB_REF#refs/heads/}
+          if [ "$BRANCH" = "main" ]; then
+            NAMESPACE="project"
+          else
+            NAMESPACE="$BRANCH"
+          fi
+
+          echo "Deploying to namespace: $NAMESPACE"
+
+          kubectl create namespace $NAMESPACE || true
+          kubectl config set-context --current --namespace=$NAMESPACE
+
+          kustomize edit set namespace $NAMESPACE
           kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend=$FRONTEND_IMAGE
           kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend=$BACKEND_IMAGE
+
           kubectl apply -k .
-          kubectl rollout status deployment/server-port -n ${{ env.NAMESPACE }}
-          kubectl rollout status deployment/todo-backend-dep -n ${{ env.NAMESPACE }}
-          kubectl get services -n ${{ env.NAMESPACE }} -o wide
+          kubectl rollout status deployment/server-port -n $NAMESPACE
+          kubectl rollout status deployment/todo-backend-dep -n $NAMESPACE
+          kubectl get services -n $NAMESPACE -o wide
