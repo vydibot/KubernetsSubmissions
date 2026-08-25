@@ -15,7 +15,7 @@ resources:
   - usr/scr/app/frontend/manifests/service.yaml
   - usr/scr/app/frontend/manifests/ingress.yaml
   - usr/scr/app/jobs/wiki_cronjob.yaml
-
+  - usr/scr/app/jobs/db_backup_cronjob.yaml
 images:
   - name: server-port
     newName: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend

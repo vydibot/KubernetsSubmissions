@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: todo-db-backup-cronjob
+  namespace: project
+spec:
+  schedule: "0 0 * * *" # Runs once every 24 hours at midnight
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: storage-sa
+          containers:
+            - name: db-backup
+              image: google/cloud-sdk:slim
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  apt-get update && apt-get install -y postgresql-client
+                  export PGPASSWORD=$POSTGRES_PASSWORD
+                  BACKUP_FILE="backup-$(date +%Y%m%d_%H%M%S).sql"
+                  
+                  # Dump the database
+                  pg_dump -h $POSTGRES_HOST -U $POSTGRES_USER -d $POSTGRES_DB > /tmp/$BACKUP_FILE
+                  
+                  # Upload to Google Cloud Storage via Workload Identity
+                  gcloud storage cp /tmp/$BACKUP_FILE gs://$BUCKET_NAME/$BACKUP_FILE
+                  echo "Backup $BACKUP_FILE successfully uploaded!"
+              env:
+                - name: POSTGRES_HOST
+                  value: "todo-postgres-svc.project.svc.cluster.local"
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_PASSWORD
+                - name: POSTGRES_DB
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-secret
+                      key: POSTGRES_DB
+                - name: BUCKET_NAME
+                  value: "dwk-todo-db-backup-dwk-gke-505002"
+          restartPolicy: OnFailure
