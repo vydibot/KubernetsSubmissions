@@ -12,6 +12,13 @@ spec:
           containers:
             - name: wiki-todo-generator
               image: curlimages/curl:latest
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "128Mi"
               command:
                 - /bin/sh
                 - -c
