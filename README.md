@@ -44,3 +44,4 @@
 - [3.9.](https://github.com/vydibot/KubernetsSubmissions/tree/3.9/the_project)
 - [3.10.](https://github.com/vydibot/KubernetsSubmissions/tree/3.10/the_project)
 - [3.11.](https://github.com/vydibot/KubernetsSubmissions/tree/3.11/the_project)
+- [3.12.](https://github.com/vydibot/KubernetsSubmissions/tree/3.12/the_project)
