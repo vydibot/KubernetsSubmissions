@@ -72,6 +72,18 @@ async def get_status():
         file_content=file_content
     )
 
+@app.get("/healthz")
+async def health_check():
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(PONG_SERVICE_URL, timeout=3.0)
+            if response.status_code == 200:
+                return {"status": "ready"}
+            else:
+                raise HTTPException(status_code=503, detail="Pong service not ready")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Pong service unreachable: {e}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host='0.0.0.0', port=5000)

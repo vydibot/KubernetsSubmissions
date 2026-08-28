@@ -71,6 +71,18 @@ def get_pongs():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
+@app.get("/healthz")
+def health_check():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        conn.close()
+        return {"status": "ready"}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Database not ready: {e}")
+
 @app.get("/")
 def root():
     return pingpong()
