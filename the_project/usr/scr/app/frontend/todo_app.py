@@ -112,6 +112,10 @@ async def root():
           <button type="submit" style="padding: 12px 24px; font-size: 14px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px; font-weight: bold;">Send</button>
         </form>
 
+        <form action="/break" method="post" style="margin: 30px 0;">
+        <button type="submit" style="padding: 12px 24px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Break App</button>
+        </form>
+
         <h2 style="color: #333; margin-top: 40px;">Todos</h2>
         <div style="display: flex; flex-direction: column; align-items: center;">
           {todos_html}
@@ -132,6 +136,17 @@ async def create_todo(text: str = Form(...)):
                 logger.info("Successfully sent todo to backend")
         except Exception as e:
             logger.error(f"Failed to submit todo: {e}")
+    
+    return responses.RedirectResponse(url="/", status_code=303)
+
+@app.post("/break")
+async def trigger_break():
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.post(f"{BACKEND_URL}/break")
+            logger.info("Successfully sent break command to backend")
+        except Exception as e:
+            logger.error(f"Failed to break backend: {e}")
     
     return responses.RedirectResponse(url="/", status_code=303)
 

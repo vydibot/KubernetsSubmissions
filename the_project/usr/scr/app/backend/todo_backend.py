@@ -102,6 +102,31 @@ async def create_todo(payload: TodoCreate):
     except Exception as e:
         logger.error(f"Database insertion error: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    
+is_healthy = True
+
+@app.get("/healthz")
+async def health_check():
+    global is_healthy
+    if not is_healthy:
+        raise HTTPException(status_code=500, detail="unhealthy")
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        cur.close()
+        conn.close()
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Health check failed (DB connection): {e}")
+        raise HTTPException(status_code=500, detail="unhealthy")
+
+@app.post("/break")
+async def break_app():
+    global is_healthy
+    is_healthy = False
+    return {"status": "broken"}
 
 if __name__ == "__main__":
     import uvicorn
