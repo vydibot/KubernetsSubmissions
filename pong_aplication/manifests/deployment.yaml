@@ -1,5 +1,5 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: pong-app-dep
   namespace: exercises
@@ -8,6 +8,13 @@ spec:
   selector:
     matchLabels:
       app: pong-app
+  strategy:
+    canary:
+      steps:
+        - setWeight: 100
+        - analysis:
+            templates:
+              - templateName: pong-cpu-usage
   template:
     metadata:
       labels:
@@ -15,7 +22,7 @@ spec:
     spec:
       containers:
         - name: pong-app
-          image: us-central1-docker.pkg.dev/dwk-gke-505002/pong-repo/pong-app:v1
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/pong-repo/pong-app:v2
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
