@@ -88,7 +88,10 @@ async def root():
         todos_html = f'<div style="color: red; background: #ffe6e6; padding: 15px; margin: 10px auto; width: 600px; border-radius: 4px;">{error_msg}</div>'
     else:
         todos_html = "".join([
-            f'<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid #2ecc71; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left;">{t["text"]}</div>'
+            f'''<div style="background: white; padding: 15px; margin: 10px auto; width: 600px; border-left: 5px solid {'#999' if t['done'] else '#2ecc71'}; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: left; display: flex; justify-content: space-between; align-items: center;">
+              <span style="{'text-decoration: line-through; color: #777;' if t['done'] else ''}">{t['text']}</span>
+              {f'<strong style="color: #278a32;">Done</strong>' if t['done'] else f'<form action="/done/{t["id"]}" method="post" style="margin: 0;"><button type="submit" style="padding: 8px 14px; font-size: 12px; background-color: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;">Mark done</button></form>'}
+            </div>'''
             for t in todos
         ])
 
@@ -137,6 +140,18 @@ async def create_todo(text: str = Form(...)):
         except Exception as e:
             logger.error(f"Failed to submit todo: {e}")
     
+    return responses.RedirectResponse(url="/", status_code=303)
+
+@app.post("/done/{todo_id}")
+async def complete_todo(todo_id: int):
+    async with httpx.AsyncClient() as client:
+        try:
+            res = await client.put(f"{BACKEND_URL}/todos/{todo_id}")
+            if res.status_code != 200:
+                logger.warning(f"Backend rejected todo completion (Status {res.status_code}): {res.text}")
+        except Exception as e:
+            logger.error(f"Failed to complete todo: {e}")
+
     return responses.RedirectResponse(url="/", status_code=303)
 
 @app.post("/break")

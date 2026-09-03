@@ -21,6 +21,7 @@ DB_PORT = os.getenv("POSTGRES_PORT", "5432")
 class Todo(BaseModel):
     id: int
     text: str
+    done: bool
 
 class TodoCreate(BaseModel):
     text: str
@@ -41,9 +42,11 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS todos (
                 id SERIAL PRIMARY KEY,
-                text VARCHAR(140) NOT NULL
+                text VARCHAR(140) NOT NULL,
+                done BOOLEAN NOT NULL DEFAULT FALSE
             );
         """)
+        cur.execute("ALTER TABLE todos ADD COLUMN IF NOT EXISTS done BOOLEAN NOT NULL DEFAULT FALSE;")
         conn.commit()
         cur.close()
         conn.close()
@@ -63,9 +66,9 @@ async def get_todos():
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, text FROM todos ORDER BY id ASC;")
+        cur.execute("SELECT id, text, done FROM todos ORDER BY id ASC;")
         rows = cur.fetchall()
-        todos = [Todo(id=row[0], text=row[1]) for row in rows]
+        todos = [Todo(id=row[0], text=row[1], done=row[2]) for row in rows]
         cur.close()
         conn.close()
         return todos
@@ -90,7 +93,7 @@ async def create_todo(payload: TodoCreate):
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO todos (text) VALUES (%s) RETURNING id, text;",
+            "INSERT INTO todos (text) VALUES (%s) RETURNING id, text, done;",
             (payload.text,)
         )
         row = cur.fetchone()
@@ -98,9 +101,34 @@ async def create_todo(payload: TodoCreate):
         cur.close()
         conn.close()
         logger.info(f"Successfully created todo ID {row[0]}")
-        return Todo(id=row[0], text=row[1])
+        return Todo(id=row[0], text=row[1], done=row[2])
     except Exception as e:
         logger.error(f"Database insertion error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+@app.put("/todos/{todo_id}", response_model=Todo)
+async def complete_todo(todo_id: int):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE todos SET done = TRUE WHERE id = %s RETURNING id, text, done;",
+            (todo_id,)
+        )
+        row = cur.fetchone()
+        if row is None:
+            conn.rollback()
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Todo not found")
+        conn.commit()
+        cur.close()
+        conn.close()
+        return Todo(id=row[0], text=row[1], done=row[2])
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Database update error: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     
 is_healthy = True

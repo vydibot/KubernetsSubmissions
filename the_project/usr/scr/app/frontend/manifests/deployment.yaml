@@ -21,7 +21,7 @@ spec:
             claimName: image-pvc
       containers:
         - name: server-port
-          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend:v1.0.0
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend:v1.1.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

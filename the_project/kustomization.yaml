@@ -19,7 +19,7 @@ resources:
 images:
   - name: server-port
     newName: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend
-    newTag: v1.0.0
+    newTag: v1.1.0
   - name: todo-backend
     newName: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend
-    newTag: v1.0.0
+    newTag: v1.1.0
