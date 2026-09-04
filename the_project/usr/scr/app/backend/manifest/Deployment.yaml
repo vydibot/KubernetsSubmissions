@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend:v1.1.0
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend:v1.1.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
@@ -54,7 +54,7 @@ spec:
           resources:
             requests:
               cpu: "100m"      # 1/10th of a CPU core
-              memory: "128Mi"  # 128 Megabytes of RAM
+              memory: "256Mi"  # 256 Megabytes of RAM
             limits:
               cpu: "250m"      # Max 1/4th of a CPU core
-              memory: "256Mi"  # Max 256 Megabytes of RAM
+              memory: "512Mi"  # Max 512 Megabytes of RAM

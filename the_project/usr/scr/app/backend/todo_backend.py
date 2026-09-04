@@ -1,3 +1,4 @@
+import json
 import os
 import logging
 from typing import List
@@ -5,6 +6,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import psycopg2
+
+NATS_URL = os.getenv("NATS_URL", "nats://my-nats-headless.nats.svc.cluster.local:4222")
+TODO_EVENT_SUBJECT = os.getenv("TODO_EVENT_SUBJECT", "todo.events")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,6 +29,35 @@ class Todo(BaseModel):
 
 class TodoCreate(BaseModel):
     text: str
+
+
+def build_todo_event(event: str, todo: Todo) -> dict:
+    return {
+        "event": event,
+        "todo": {
+            "id": todo.id,
+            "text": todo.text,
+            "done": todo.done,
+        },
+    }
+
+
+async def publish_todo_event(event: str, todo: Todo):
+    payload = build_todo_event(event, todo)
+    nc = None
+    try:
+        import nats
+
+        nc = await nats.connect(NATS_URL)
+        await nc.publish(TODO_EVENT_SUBJECT, json.dumps(payload).encode("utf-8"))
+        await nc.flush()
+        logger.info("Published todo event '%s' for todo %s to NATS subject '%s'", event, todo.id, TODO_EVENT_SUBJECT)
+    except Exception as exc:
+        logger.warning("Failed to publish todo event '%s': %s", event, exc)
+    finally:
+        if nc is not None:
+            await nc.drain()
+
 
 def get_db_connection():
     return psycopg2.connect(
@@ -100,8 +133,10 @@ async def create_todo(payload: TodoCreate):
         conn.commit()
         cur.close()
         conn.close()
+        created_todo = Todo(id=row[0], text=row[1], done=row[2])
         logger.info(f"Successfully created todo ID {row[0]}")
-        return Todo(id=row[0], text=row[1], done=row[2])
+        await publish_todo_event("todo.created", created_todo)
+        return created_todo
     except Exception as e:
         logger.error(f"Database insertion error: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
@@ -124,7 +159,9 @@ async def complete_todo(todo_id: int):
         conn.commit()
         cur.close()
         conn.close()
-        return Todo(id=row[0], text=row[1], done=row[2])
+        updated_todo = Todo(id=row[0], text=row[1], done=row[2])
+        await publish_todo_event("todo.updated", updated_todo)
+        return updated_todo
     except HTTPException:
         raise
     except Exception as e:

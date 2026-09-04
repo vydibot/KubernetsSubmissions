@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-broadcaster-dep
+  namespace: project
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: todo-broadcaster
+  template:
+    metadata:
+      labels:
+        app: todo-broadcaster
+    spec:
+      containers:
+        - name: todo-broadcaster
+          image: us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/broadcaster:v1.1.2
+          imagePullPolicy: Always
+          env:
+            - name: NATS_URL
+              value: "nats://my-nats-headless.nats.svc.cluster.local:4222"
+            - name: TODO_EVENT_SUBJECT
+              value: "todo.events"
+            - name: TODO_EVENT_QUEUE
+              value: "todo-broadcaster"
+            - name: BROADCAST_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: broadcaster-secret
+                  key: BROADCAST_WEBHOOK_URL
+                  optional: true
+            - name: BROADCAST_MODE
+              valueFrom:
+                secretKeyRef:
+                  name: broadcaster-secret
+                  key: BROADCAST_MODE
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
