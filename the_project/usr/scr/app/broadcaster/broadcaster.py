@@ -28,7 +28,7 @@ async def send_to_webhook(message: dict[str, Any]) -> None:
 
     async with aiohttp.ClientSession() as session:
         message = f"Todo {action}: {summary}"
-        payload = {"text": f"*{message}*"} if BROADCAST_MODE != "generic" else {
+        payload = {"text": f"* {message} *"} if BROADCAST_MODE != "generic" else {
             "user": "bot",
             "message": message,
         }
