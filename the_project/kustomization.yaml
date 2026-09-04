@@ -7,7 +7,6 @@ resources:
   - storage/PersistentVolumeClaim.yaml
   - usr/scr/app/configmap/configmap.yaml
   - usr/scr/app/database/secret.dec.yaml 
-  - usr/scr/app/broadcaster/secret.yaml
   - usr/scr/app/database/postgres/service.yaml
   - usr/scr/app/database/postgres/stafulset.yaml
   - usr/scr/app/backend/manifest/Deployment.yaml

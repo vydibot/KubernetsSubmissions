@@ -49,6 +49,7 @@ jobs:
         run: |
           echo "FRONTEND_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/frontend:${{ github.sha }}" >> $GITHUB_ENV
           echo "BACKEND_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:${{ github.sha }}" >> $GITHUB_ENV
+          echo "BROADCASTER_IMAGE=${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/broadcaster:${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Build and Push Frontend
         run: |
@@ -59,6 +60,11 @@ jobs:
         run: |
           docker build --platform linux/amd64 -t $BACKEND_IMAGE ./the_project/usr/scr/app/backend
           docker push $BACKEND_IMAGE
+
+      - name: Build and Push Broadcaster
+        run: |
+          docker build --platform linux/amd64 -t $BROADCASTER_IMAGE ./the_project/usr/scr/app/broadcaster
+          docker push $BROADCASTER_IMAGE
 
       - name: Install SOPS & Decrypt Secret
         env:
@@ -73,6 +79,8 @@ jobs:
 
       - name: Deploy to GKE
         working-directory: ./the_project
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
         run: |
           BRANCH=${GITHUB_REF#refs/heads/}
           if [ "$BRANCH" = "main" ]; then
@@ -83,12 +91,17 @@ jobs:
 
           echo "Deploying to namespace: $NAMESPACE"
 
-          kubectl create namespace $NAMESPACE || true
+          kubectl create namespace "$NAMESPACE" \
+            --dry-run=client -o yaml | kubectl apply -f -
           kubectl config set-context --current --namespace=$NAMESPACE
+
+          sops -d usr/scr/app/broadcaster/secret.enc.yaml | \
+            kubectl -n "$NAMESPACE" apply -f -
 
           kustomize edit set namespace $NAMESPACE
           kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend=$FRONTEND_IMAGE
           kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend=$BACKEND_IMAGE
+          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/broadcaster=$BROADCASTER_IMAGE
 
           kubectl apply -k .
           kubectl rollout status deployment/server-port -n $NAMESPACE
