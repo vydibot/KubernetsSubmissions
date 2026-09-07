@@ -36,7 +36,10 @@ spec:
             - name: POSTGRES_HOST
               value: "todo-postgres-svc"
             - name: POSTGRES_DB
-              value: "todos_db"
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
