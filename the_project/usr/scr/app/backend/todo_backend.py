@@ -16,7 +16,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("todo-backend")
 
-DB_HOST = os.getenv("POSTGRES_HOST", "todo-postgres-svc.project.svc.cluster.local")
+DB_HOST = os.getenv("POSTGRES_HOST", "todo-postgres-svc")
 DB_NAME = os.getenv("POSTGRES_DB", "todos_db")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgrespassword")

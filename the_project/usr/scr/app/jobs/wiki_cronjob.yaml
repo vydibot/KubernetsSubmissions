@@ -2,7 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: wiki-todo-cronjob
-  namespace: project
 spec:
   schedule: "0 * * * *"
   jobTemplate:
@@ -28,7 +27,7 @@ spec:
                   TODO_TEXT="Read $WIKI_URL"
                   echo "Generated todo: $TODO_TEXT"
                   
-                  curl -s -f -X POST "http://todo-backend-svc.project.svc.cluster.local:8000/todos" \
+                  curl -s -f -X POST "http://todo-backend-svc:8000/todos" \
                     -H "Content-Type: application/json" \
                     -d "{\"text\": \"$TODO_TEXT\"}"
           restartPolicy: OnFailure

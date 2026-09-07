@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: server-port
-  namespace: project
 spec:
   replicas: 1
   strategy:
@@ -36,7 +35,7 @@ spec:
             - name: PORT
               value: "8000"
             - name: BACKEND_URL
-              value: "http://todo-backend-svc.project.svc.cluster.local:8000"
+              value: "http://todo-backend-svc:8000"
           envFrom:
             - configMapRef:
                 name: todo-app-config

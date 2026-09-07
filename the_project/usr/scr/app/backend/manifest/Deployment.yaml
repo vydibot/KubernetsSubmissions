@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: todo-backend-dep
-  namespace: project
 spec:
   replicas: 1
   selector:
@@ -35,7 +34,7 @@ spec:
             - name: PORT
               value: "8000"
             - name: POSTGRES_HOST
-              value: "todo-postgres-svc.project.svc.cluster.local"
+              value: "todo-postgres-svc"
             - name: POSTGRES_DB
               value: "todos_db"
             - name: POSTGRES_USER

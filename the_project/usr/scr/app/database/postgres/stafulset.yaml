@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: todo-postgres-ss
-  namespace: project
 spec:
   serviceName: todo-postgres-svc
   replicas: 1

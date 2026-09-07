@@ -2,7 +2,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: todo-db-backup-cronjob
-  namespace: project
 spec:
   schedule: "0 0 * * *" # Runs once every 24 hours at midnight
   jobTemplate:
@@ -37,7 +36,7 @@ spec:
                   echo "Backup $BACKUP_FILE successfully uploaded!"
               env:
                 - name: POSTGRES_HOST
-                  value: "todo-postgres-svc.project.svc.cluster.local"
+                  value: "todo-postgres-svc"
                 - name: POSTGRES_USER
                   valueFrom:
                     secretKeyRef:

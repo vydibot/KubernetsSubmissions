@@ -37,6 +37,14 @@ async def send_to_webhook(message: dict[str, Any]) -> None:
             logger.info("Forwarded todo event to webhook (status=%s)", response.status)
 
 
+async def process_message(message: dict[str, Any]) -> None:
+    if BROADCAST_MODE == "log":
+        logger.info("Staging broadcast event: %s", json.dumps(message, sort_keys=True))
+        return
+
+    await send_to_webhook(message)
+
+
 async def run() -> None:
     nc = await nats.connect(NATS_URL)
     logger.info("Connected to NATS at %s", NATS_URL)
@@ -46,7 +54,7 @@ async def run() -> None:
         logger.info("Received message on %s: %s", msg.subject, raw)
         try:
             payload = json.loads(raw)
-            await send_to_webhook(payload)
+            await process_message(payload)
         except Exception as exc:
             logger.warning("Failed processing NATS event: %s", exc)
 

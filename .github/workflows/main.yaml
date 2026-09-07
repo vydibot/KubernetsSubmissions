@@ -3,7 +3,9 @@ name: Release application
 on:
   push:
     branches:
-      - '*'  
+      - main
+    tags:
+      - '*'
 
 env:
   PROJECT_ID: dwk-gke-505002
@@ -66,44 +68,32 @@ jobs:
           docker build --platform linux/amd64 -t $BROADCASTER_IMAGE ./the_project/usr/scr/app/broadcaster
           docker push $BROADCASTER_IMAGE
 
-      - name: Install SOPS & Decrypt Secret
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
-        run: |
-          sudo curl -L https://github.com/getsops/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64 -o /usr/local/bin/sops
-          sudo chmod +x /usr/local/bin/sops
-          sops -d the_project/usr/scr/app/database/secret.yaml > the_project/usr/scr/app/database/secret.dec.yaml
-
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2
 
-      - name: Deploy to GKE
-        working-directory: ./the_project
-        env:
-          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+      - name: Select deployment environment
         run: |
-          BRANCH=${GITHUB_REF#refs/heads/}
-          if [ "$BRANCH" = "main" ]; then
-            NAMESPACE="project"
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            echo "DEPLOYMENT_ENV=staging" >> "$GITHUB_ENV"
+            echo "NAMESPACE=staging" >> "$GITHUB_ENV"
+          elif [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "DEPLOYMENT_ENV=production" >> "$GITHUB_ENV"
+            echo "NAMESPACE=production" >> "$GITHUB_ENV"
           else
-            NAMESPACE="$BRANCH"
+            echo "Unsupported ref: $GITHUB_REF" >&2
+            exit 1
           fi
 
-          echo "Deploying to namespace: $NAMESPACE"
-
-          kubectl create namespace "$NAMESPACE" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl config set-context --current --namespace=$NAMESPACE
-
-          sops -d usr/scr/app/broadcaster/secret.enc.yaml | \
-            kubectl -n "$NAMESPACE" apply -f -
-
-          kustomize edit set namespace $NAMESPACE
-          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/frontend=$FRONTEND_IMAGE
-          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/backend=$BACKEND_IMAGE
-          kustomize edit set image us-central1-docker.pkg.dev/dwk-gke-505002/todo-repo/broadcaster=$BROADCASTER_IMAGE
-
-          kubectl apply -k .
-          kubectl rollout status deployment/server-port -n $NAMESPACE
-          kubectl rollout status deployment/todo-backend-dep -n $NAMESPACE
-          kubectl get services -n $NAMESPACE -o wide
+      - name: Deploy to GKE
+        run: |
+          echo "Deploying $GITHUB_SHA to $DEPLOYMENT_ENV ($NAMESPACE)"
+          (cd the_project && \
+            kustomize edit set image server-port=$FRONTEND_IMAGE && \
+            kustomize edit set image todo-backend=$BACKEND_IMAGE && \
+            kustomize edit set image todo-broadcaster=$BROADCASTER_IMAGE)
+          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k "deploy/overlays/$DEPLOYMENT_ENV"
+          kubectl rollout status deployment/server-port -n "$NAMESPACE"
+          kubectl rollout status deployment/todo-backend-dep -n "$NAMESPACE"
+          kubectl rollout status deployment/todo-broadcaster-dep -n "$NAMESPACE"
+          kubectl get services -n "$NAMESPACE" -o wide
