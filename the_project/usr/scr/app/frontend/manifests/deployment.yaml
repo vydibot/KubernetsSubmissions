@@ -44,7 +44,7 @@ spec:
               mountPath: /app/images
           resources:
             requests:
-              cpu: "100m"      # 1/10th of a CPU core
+              cpu: "30m"   # 1/30th of a CPU core
               memory: "128Mi"  # 128 Megabytes of RAM
             limits:
               cpu: "250m"      # Max 1/4th of a CPU core
