@@ -3,5 +3,4 @@ kind: Kustomization
 
 resources:
   - ../log_output/manifests
-  - ../pong_aplication
-
+  - ../pong_aplication/manifests

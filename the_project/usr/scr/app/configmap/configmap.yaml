@@ -6,6 +6,6 @@ metadata:
 data:
   PORT: "8000"
   BACKEND_URL: "http://todo-backend-svc:8000"
-  IMAGE_DIR: "/usr/src/app/images"
+  IMAGE_DIR: "/app/images"
   CACHE_DURATION: "600"
   IMAGE_SOURCE_URL: "https://picsum.photos/1200"
